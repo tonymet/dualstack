@@ -137,6 +137,7 @@ func (dl *MultiListener) Close() error {
 		return fmt.Errorf("already closed")
 	}
 	close(dl.closeCh)
+	dl.closed = true
 	// todo clean up ugly
 	var firstErr error
 	for _, l := range dl.listeners {
@@ -146,7 +147,6 @@ func (dl *MultiListener) Close() error {
 	}
 	dl.wg.Wait()
 	close(dl.acceptCh)
-	dl.closed = true
 	return firstErr
 }
 

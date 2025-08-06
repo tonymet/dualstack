@@ -58,6 +58,35 @@ func NewLocalLoopback(port string) (*MultiListener, error)
 
 NewLocalLoopback returns Multilistener on ipv6 & ipv4 loopback addresses
 
+<details><summary>Example</summary>
+<p>
+
+NewLocalLoopback when you want to listen to ipv6 & ipv4 loopback with one listener
+
+```go
+dual, err := NewLocalLoopback("8080")
+if err != nil {
+	panic(err)
+}
+defer dual.Close()
+fmt.Printf("Serving HTTP %+v\n", dual.AllAddr())
+fmt.Printf("Preferred Addr: %+v\n", dual.Addr())
+go http.Serve(dual, nil)
+// Output:
+// Serving HTTP [::1]:8080,127.0.0.1:8080
+// Preferred Addr: [::1]:8080
+```
+
+#### Output
+
+```
+Serving HTTP [::1]:8080,127.0.0.1:8080
+Preferred Addr: [::1]:8080
+```
+
+</p>
+</details>
+
 <a name="NewMultiListener"></a>
 ### func NewMultiListener
 
