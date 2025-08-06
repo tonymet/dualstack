@@ -8,11 +8,11 @@ import "github.com/tonymet/dualstack/multilistener"
 
 ©️ 2025 Anthony Metzidis
 
-multilistener \-\- listen to ipv4 & ipv6 interfaces or multiple interfaces
+multilistener \-\- listen to all loopback interfaces, or a mixed slice of ipv4 & ipv6 interfaces
 
-go std library can listen to ALL interfaces but cannot listen to all local interfaces by default.
+go std library \(net.Listen\("tcp", ":8080"\)\) can listen to ALL interfaces but cannot listen to all local interfaces by default.
 
-use multilistener.ListenLocalLoopback to return a single Listener for all ipv4 & ipv6 interfaces
+use multilistener.ListenLocalLoopback to return a single Listener for all ipv4 & ipv6 loopback interfaces
 
 ## Index
 
@@ -67,6 +67,8 @@ func NewMultiListener(addrs Addresses) (*MultiListener, error)
 
 NewMultiListener returns multilistener over slice of \[\]string
 
+see net.Dial and net.Listen for the string format of the address e.g. "\[::1\]:8080" for ipv6 and "127.0.0.1:8080" for ipv4
+
 <a name="NewMultiListenerRaw"></a>
 ### func NewMultiListenerRaw
 
@@ -94,7 +96,7 @@ func (dl *MultiListener) Accept() (net.Conn, error)
 func (dl *MultiListener) Addr() net.Addr
 ```
 
-
+Addr returns the preferred \(first\) interface Addr
 
 <a name="MultiListener.AllAddr"></a>
 ### func \(\*MultiListener\) AllAddr
@@ -103,7 +105,9 @@ func (dl *MultiListener) Addr() net.Addr
 func (dl *MultiListener) AllAddr() net.Addr
 ```
 
+AllAddr returns all the addresses, comma\-separated
 
+NOTE: NOT A VALID IP ADDRESS . Use Addr\(\) for a valid address
 
 <a name="MultiListener.Close"></a>
 ### func \(\*MultiListener\) Close

@@ -1,11 +1,13 @@
 // ©️ 2025 Anthony Metzidis
 /*
-multilistener -- listen to ipv4 & ipv6 interfaces or multiple interfaces
+multilistener -- listen to all loopback interfaces, or a mixed slice of
+ipv4 & ipv6 interfaces
 
-go std library can listen to ALL interfaces but cannot listen to all local interfaces
-by default.  
+go std library (net.Listen("tcp", ":8080")) can listen to ALL interfaces 
+but cannot listen to all local interfaces by default.  
 
-use multilistener.ListenLocalLoopback to return a single Listener for all ipv4 & ipv6 interfaces
+use multilistener.ListenLocalLoopback to return a single Listener for all ipv4 &
+ipv6 loopback interfaces
 */
 package multilistener
 
@@ -72,6 +74,9 @@ func NewMultiListenerRaw(listeners []net.Listener) (*MultiListener, error) {
 }
 
 // NewMultiListener returns multilistener over slice of []string 
+//
+// see net.Dial and net.Listen for the string format of the address
+// e.g. "[::1]:8080" for ipv6 and "127.0.0.1:8080" for ipv4
 func NewMultiListener(addrs Addresses) (*MultiListener, error) {
 	// todo: support arbitrary
 	var listeners = make([]net.Listener, 0, len(addrs))
@@ -94,6 +99,9 @@ func NewMultiListener(addrs Addresses) (*MultiListener, error) {
 	return dl, nil
 }
 
+// AllAddr returns all the addresses, comma-separated
+//
+// NOTE: NOT A VALID IP ADDRESS . Use Addr() for a valid address
 func (dl *MultiListener) AllAddr() net.Addr {
 	return dl
 }
@@ -141,6 +149,7 @@ func (dl *MultiListener) Close() error {
 	return firstErr
 }
 
+// Addr returns the preferred (first) interface Addr
 func (dl *MultiListener) Addr() net.Addr {
 	// Return one of the addresses for display
 	return dl.listeners[0].Addr()
