@@ -1,0 +1,18 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "echo",
+            "type": "shell",
+            "command": "echo Hello"
+        },
+        {
+            "label": "run cmd",
+            "type": "shell",
+            "command": "go run ${workspaceFolder}/cmd/http-server-ipv6 -l bind3",
+            "problemMatcher": []
+        }
+    ]
+}
