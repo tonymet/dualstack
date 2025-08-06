@@ -1,3 +1,12 @@
+// ©️ 2025 Anthony Metzidis
+/*
+multilistener -- listen to ipv4 & ipv6 interfaces or multiple interfaces
+
+go std library can listen to ALL interfaces but cannot listen to all local interfaces
+by default.  
+
+use multilistener.ListenLocalLoopback to return a single Listener for all ipv4 & ipv6 interfaces
+*/
 package multilistener
 
 import (
@@ -40,11 +49,15 @@ func (dl *MultiListener) String() string {
 	return r.String()
 }
 
+// NewLocalLoopback returns Multilistener on ipv6 & ipv4 loopback addresses
 func NewLocalLoopback(port string) (*MultiListener, error) {
 	return NewMultiListener(Addresses{"[::1]:" + port, "127.0.0.1:" + port})
 }
 
-func NewMultiListnerRaw(listeners []net.Listener) (*MultiListener, error) {
+// NewMultiListenerRaw returns a MultiListener wrapper of multiple listeners
+// 
+// useful when raw net.Addr is needed
+func NewMultiListenerRaw(listeners []net.Listener) (*MultiListener, error) {
 	// todo: see if listeners can be tested
 	dl := &MultiListener{
 		listeners: listeners,
@@ -58,6 +71,7 @@ func NewMultiListnerRaw(listeners []net.Listener) (*MultiListener, error) {
 	return dl, nil
 }
 
+// NewMultiListener returns multilistener over slice of []string 
 func NewMultiListener(addrs Addresses) (*MultiListener, error) {
 	// todo: support arbitrary
 	var listeners = make([]net.Listener, 0, len(addrs))
