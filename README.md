@@ -41,7 +41,9 @@ type Addresses = []string
 <a name="MultiListener"></a>
 ## type MultiListener
 
-MultiListener definition \(as from previous answer\)
+MultiListener implements net.Listener interface
+
+multiplexes multiple net.Listeners concurrently looping over Accept\(\)
 
 ```go
 type MultiListener struct {
@@ -57,6 +59,8 @@ func NewLocalLoopback(port string) (*MultiListener, error)
 ```
 
 NewLocalLoopback returns Multilistener on ipv6 & ipv4 loopback addresses
+
+ipv6 is the preferred address when Addr\(\) is called
 
 <details><summary>Example</summary>
 <p>
@@ -107,7 +111,7 @@ func NewMultiListenerRaw(listeners []net.Listener) (*MultiListener, error)
 
 NewMultiListenerRaw returns a MultiListener wrapper of multiple listeners
 
-useful when raw net.Addr is needed
+useful when raw net.Addr or net.Listener is needed
 
 <a name="MultiListener.Accept"></a>
 ### func \(\*MultiListener\) Accept
@@ -145,7 +149,9 @@ NOTE: NOT A VALID IP ADDRESS . Use Addr\(\) for a valid address
 func (dl *MultiListener) Close() error
 ```
 
+Close closes all internal channels
 
+safe to call multiple times. will return "already closed" if so
 
 <a name="MultiListener.Network"></a>
 ### func \(\*MultiListener\) Network
@@ -154,7 +160,7 @@ func (dl *MultiListener) Close() error
 func (dl *MultiListener) Network() string
 ```
 
-
+net.Addr.Network\(\) implementation
 
 <a name="MultiListener.String"></a>
 ### func \(\*MultiListener\) String

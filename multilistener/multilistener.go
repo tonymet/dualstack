@@ -19,7 +19,9 @@ import (
 	"sync"
 )
 
-// MultiListener definition (as from previous answer)
+// MultiListener implements net.Listener interface 
+//
+// multiplexes multiple net.Listeners concurrently looping over Accept()
 type MultiListener struct {
 	listeners []net.Listener
 	acceptCh  chan net.Conn
@@ -30,6 +32,7 @@ type MultiListener struct {
 
 type Addresses = []string
 
+// net.Addr.Network() implementation
 func (dl *MultiListener) Network() string {
 	return "tcp+multi"
 }
@@ -53,15 +56,16 @@ func (dl *MultiListener) String() string {
 }
 
 // NewLocalLoopback returns Multilistener on ipv6 & ipv4 loopback addresses
+//
+// ipv6 is the preferred address when Addr() is called
 func NewLocalLoopback(port string) (*MultiListener, error) {
 	return NewMultiListener(Addresses{"[::1]:" + port, "127.0.0.1:" + port})
 }
 
 // NewMultiListenerRaw returns a MultiListener wrapper of multiple listeners
 // 
-// useful when raw net.Addr is needed
+// useful when raw net.Addr or net.Listener is needed
 func NewMultiListenerRaw(listeners []net.Listener) (*MultiListener, error) {
-	// todo: see if listeners can be tested
 	dl := &MultiListener{
 		listeners: listeners,
 		acceptCh:  make(chan net.Conn),
@@ -79,7 +83,6 @@ func NewMultiListenerRaw(listeners []net.Listener) (*MultiListener, error) {
 // see net.Dial and net.Listen for the string format of the address
 // e.g. "[::1]:8080" for ipv6 and "127.0.0.1:8080" for ipv4
 func NewMultiListener(addrs Addresses) (*MultiListener, error) {
-	// todo: support arbitrary
 	var listeners = make([]net.Listener, 0, len(addrs))
 	for _, addr := range addrs {
 		ln, err := net.Listen("tcp", addr)
@@ -132,6 +135,9 @@ func (dl *MultiListener) Accept() (net.Conn, error) {
 	}
 }
 
+// Close closes all internal channels
+//
+// safe to call multiple times.  will return "already closed" if so
 func (dl *MultiListener) Close() error {
 	if dl.closed {
 		return fmt.Errorf("already closed")
