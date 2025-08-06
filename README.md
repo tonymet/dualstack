@@ -6,13 +6,13 @@
 import "github.com/tonymet/dualstack/multilistener"
 ```
 
-©️ 2025 Anthony Metzidis
-
-multilistener \-\- listen to all loopback interfaces, or a mixed slice of ipv4 & ipv6 interfaces
+Package multilistener \-\- listen to all loopback interfaces, or a mixed slice of ipv4 & ipv6 interfaces
 
 go std library \(net.Listen\("tcp", ":8080"\)\) can listen to ALL interfaces but cannot listen to all local interfaces by default.
 
 use multilistener.ListenLocalLoopback to return a single Listener for all ipv4 & ipv6 loopback interfaces
+
+©️ 2025 Anthony Metzidis
 
 ## Index
 
