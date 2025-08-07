@@ -1,29 +1,73 @@
 package multilistener
 
 import (
-	"io"
-	"net/http"
-	"sync"
 	"fmt"
+	"io"
+	"net"
+	"net/http"
 	"testing"
 	"time"
 )
 
+// TestListenOnlyIPV6 sanity check that IPv6 Socket cannot receive ipv4 requests
+//
+// AI claimed IPV6 ::1 C sockets also accepted ipv4.  This test confirms go sockets do not
+// see also cmd/simple-listener and test with telnet
+// I feel like I'm taking crazy pills.
+func TestListenOnlyIPV6(t *testing.T){
+	ready := make(chan struct{})
+	port := "8084"
+	ml, err := net.Listen("tcp", "[::1]:"+port) // Listen only on IPv6 loopback
+	if err != nil {
+		t.Fatalf("Failed to create MultiListener for IPv6 only: %v", err)
+	}
+
+	go func() {
+		close(ready)
+		if err := http.Serve(ml, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if _, err := io.WriteString(w, "Hello from IPv6 Listener!"); err != nil {
+				t.Errorf("error writing string: %v", err)
+			}
+		})); err != nil {
+			t.Errorf("http serve error: %v", err)
+		}
+	}()
+	// server is ready
+	<-ready
+	// Attempt to connect to the IPv4 loopback address
+	testAddr := "127.0.0.1:"+port
+	t.Logf("Attempting to connect to %s (IPv4) to an IPv6-only listener", testAddr)
+	resp, err := http.Get("http://" + testAddr)
+	if err != nil {
+		t.Logf("Expected error when connecting to IPv4 address on IPv6-only listener: %v", err)
+		// This is the expected behavior, as the listener is only on IPv6
+		return
+	}
+	defer resp.Body.Close()
+	// If we reach here, it means the IPv4 connection succeeded unexpectedly
+	t.Fatalf("Unexpected success connecting to IPv4 address %s on an IPv6-only listener. Status: %d", testAddr, resp.StatusCode)
+}
+
+
 func TestMultiListener(t *testing.T) {
+	ready := make(chan struct{})
 	ml, err := NewLocalLoopback("8081") // Use port 0 to get a random available port
 	if err != nil {
 		t.Fatalf("Failed to create MultiListener: %v", err)
 	}
 	// Start an HTTP server on the MultiListener
-	var wg sync.WaitGroup
-	wg.Add(1)
 	go func() {
-		defer wg.Done()
-		http.Serve(ml, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			io.WriteString(w, "Hello from MultiListener!")
-		}))
+		close(ready)
+		if err := http.Serve(ml, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if _, err := io.WriteString(w, "Hello from MultiListener!"); err != nil{
+				t.Errorf("error writeString")
+			}
+		})); err != nil{
+			t.Errorf("http serve error")
+		}
 	}()
 
+	<-ready
 	// Get the addresses of the listeners
 	addrs := ml.AllAddr().String()
 	t.Logf("MultiListener serving on: %s", addrs)
@@ -67,7 +111,7 @@ func ExampleNewLocalLoopback() {
 	}
 	fmt.Printf("Serving HTTP %+v\n", dual.AllAddr())
 	fmt.Printf("Preferred Addr: %+v\n", dual.Addr())
-	go http.Serve(dual, nil)
+	go http.Serve(dual, nil) //nolint:errcheck
 	// Output:
 	// Serving HTTP [::1]:8080,127.0.0.1:8080
 	// Preferred Addr: [::1]:8080

@@ -12,6 +12,8 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.24.x'   # Set to your Go version
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v4
       - name: Install dependencies
         run: go mod tidy
       - name: Run tests
