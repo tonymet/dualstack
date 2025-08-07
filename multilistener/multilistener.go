@@ -31,10 +31,12 @@ type MultiListener struct {
 
 type Addresses = []string
 
-// net.Addr.Network() implementation
+// Network() implementation for net.Addr
 func (dl *MultiListener) Network() string {
 	return "tcp+multi"
 }
+
+// String() joins all addresses, comma separated, for logs & debug
 func (dl *MultiListener) String() string {
 	if len(dl.listeners) < 1 {
 		return ""
@@ -153,6 +155,5 @@ func (dl *MultiListener) Close() error {
 
 // Addr returns the preferred (first) interface Addr
 func (dl *MultiListener) Addr() net.Addr {
-	// Return one of the addresses for display
 	return dl.listeners[0].Addr()
 }

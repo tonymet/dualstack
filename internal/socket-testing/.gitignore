@@ -1,0 +1,10 @@
+# Ignore all files
+daemon
+daemon2
+*
+
+# But not directories (so Git can check inside them)
+# !*/
+
+# Except daemon.c (allow this specific file)
+!daemon.c
