@@ -27,7 +27,6 @@ type MultiListener struct {
 	acceptCh  chan net.Conn
 	closeCh   chan struct{}
 	wg        sync.WaitGroup
-	closed    bool
 }
 
 type Addresses = []string
@@ -137,13 +136,9 @@ func (dl *MultiListener) Accept() (net.Conn, error) {
 
 // Close closes all internal channels
 //
-// safe to call multiple times.  will return "already closed" if so
+// do not defer Close() if passing to http.Server 
 func (dl *MultiListener) Close() error {
-	if dl.closed {
-		return fmt.Errorf("already closed")
-	}
 	close(dl.closeCh)
-	dl.closed = true
 	// todo clean up ugly
 	var firstErr error
 	for _, l := range dl.listeners {

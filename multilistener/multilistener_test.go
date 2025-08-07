@@ -10,12 +10,10 @@ import (
 )
 
 func TestMultiListener(t *testing.T) {
-	ml, err := NewLocalLoopback("8080") // Use port 0 to get a random available port
+	ml, err := NewLocalLoopback("8081") // Use port 0 to get a random available port
 	if err != nil {
 		t.Fatalf("Failed to create MultiListener: %v", err)
 	}
-	defer ml.Close()
-
 	// Start an HTTP server on the MultiListener
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -67,7 +65,6 @@ func ExampleNewLocalLoopback() {
 	if err != nil {
 		panic(err)
 	}
-	defer dual.Close()
 	fmt.Printf("Serving HTTP %+v\n", dual.AllAddr())
 	fmt.Printf("Preferred Addr: %+v\n", dual.Addr())
 	go http.Serve(dual, nil)
