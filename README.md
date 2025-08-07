@@ -75,7 +75,6 @@ dual, err := NewLocalLoopback("8080")
 if err != nil {
 	panic(err)
 }
-defer dual.Close()
 fmt.Printf("Serving HTTP %+v\n", dual.AllAddr())
 fmt.Printf("Preferred Addr: %+v\n", dual.Addr())
 go http.Serve(dual, nil)
@@ -154,7 +153,7 @@ func (dl *MultiListener) Close() error
 
 Close closes all internal channels
 
-safe to call multiple times. will return "already closed" if so
+do not defer Close\(\) if passing to http.Server
 
 <a name="MultiListener.Network"></a>
 ### func \(\*MultiListener\) Network

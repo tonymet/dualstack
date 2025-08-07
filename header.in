@@ -1,0 +1,2 @@
+[![Go Test](https://github.com/tonymet/dualstack/actions/workflows/go.yml/badge.svg)](https://github.com/tonymet/dualstack/actions/workflows/go.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/tonymet/dualstack.svg)](https://pkg.go.dev/github.com/tonymet/dualstack)
