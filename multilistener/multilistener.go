@@ -2,8 +2,8 @@
 Package multilistener -- listen to all loopback interfaces, or a mixed slice of
 ipv4 & ipv6 interfaces
 
-go std library (net.Listen("tcp", ":8080")) can listen to ALL interfaces 
-but cannot listen to all local interfaces by default.  
+go std library (net.Listen("tcp", ":8080")) can listen to ALL interfaces
+but cannot listen to all local interfaces by default.
 
 use multilistener.ListenLocalLoopback to return a single Listener for all ipv4 &
 ipv6 loopback interfaces
@@ -19,7 +19,7 @@ import (
 	"sync"
 )
 
-// MultiListener implements net.Listener interface 
+// MultiListener implements net.Listener interface
 //
 // multiplexes multiple net.Listeners concurrently looping over Accept()
 type MultiListener struct {
@@ -64,7 +64,7 @@ func NewLocalLoopback(port string) (*MultiListener, error) {
 }
 
 // NewMultiListenerRaw returns a MultiListener wrapper of multiple listeners
-// 
+//
 // useful when raw net.Addr or net.Listener is needed
 func NewMultiListenerRaw(listeners []net.Listener) (*MultiListener, error) {
 	dl := &MultiListener{
@@ -79,7 +79,7 @@ func NewMultiListenerRaw(listeners []net.Listener) (*MultiListener, error) {
 	return dl, nil
 }
 
-// NewMultiListener returns multilistener over slice of []string 
+// NewMultiListener returns multilistener over slice of []string
 //
 // see net.Dial and net.Listen for the string format of the address
 // e.g. "[::1]:8080" for ipv6 and "127.0.0.1:8080" for ipv4
@@ -138,8 +138,13 @@ func (dl *MultiListener) Accept() (net.Conn, error) {
 
 // Close closes all internal channels
 //
-// do not defer Close() if passing to http.Server 
-func (dl *MultiListener) Close() error {
+// do not defer Close() if passing to http.Server
+func (dl *MultiListener) Close() (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("MultiListener.Close() panicked on second call: %v", r)
+		}
+	}()
 	close(dl.closeCh)
 	// todo clean up ugly
 	var firstErr error
