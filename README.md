@@ -4,8 +4,74 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/tonymet/dualstack.svg)](https://pkg.go.dev/github.com/tonymet/dualstack)
 
 ## Dualstack -- utilities to ease migration to ipv6
+We recognize there are still barriers to ipv6 adoption.  This project aims to identify anti-patterns blocking ipv6 / dual stack
+compatibility like `net.Listen("tcp", "127.0.0.1")` .   First , ipv6
+linter/analyzer identifies faulty code.  dualstack offers a few ipv6-compatible
+approaches to secure those interfaces: multilistener to listen to multiple interfaces with a single Accept(), middleware
+to block remote http traffic, and firewall to block remote tcp connections.  
 
-### Overview
+Now that the utilties are mature, the next step is to expand the lint suite and
+enter PRs on open source projects to help improve ipv6 compatibility
+
+## How to Listen Properly to support ipv6 and ipv4 dual stack
+
+* `net.Listen("tcp", ":" + port)` is the  preferred dual stack listener on all interfaces.  The kernel will handle ipv4 & ipv6 
+connections. But for loopback services like oauth, this risks exposure to the internet 
+
+### To protect a net.Listener, you can wrap with `middleware.FirewallListener`
+e.g. 
+```
+l, _ := net.Listen("tcp", ":" + port)
+protectedListener := middleware.FirewallListener{l}
+// 
+for{
+    // use as usual
+    conn, err := protectedListener.Accept()
+    if err == net.errClosed{
+        return
+    } else if err != nil{
+        // connection was blocked 
+        continue
+    }
+    go handleConnection(conn)
+}
+```
+
+### To listen to all localhost interfaces , use multilistener
+
+```
+ml, err := multilistener.NewLocalLoopback()
+if err != nil{
+    panic(err)
+}
+// http will serve on [::1] and 127.0.0.1
+http.Serve(ml, nil)
+```
+
+### How to Protect an Existing http.Server
+`LocalOnlyMiddleware` adds a remote-address filter before your handler. Any remote address will receive 403 / unauthorized.
+
+
+```
+func ExampleLocalOnlyMiddleware() {
+	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Allowed"))
+	})
+	protectedHandler := LocalOnlyMiddleware(nextHandler)
+	// for common apps use http.Handle("/", protectedHandler)
+	ts := httptest.NewServer(protectedHandler)
+	defer ts.Close()
+
+```
+
+## Why Now?
+
+Developers are familiar with ipv4 as a stable and secure approach. Local oauth
+services are mature. But With IPv4 address exhaustion accelerating, ipv6 compatibility
+is more urgent now than it has been in the past. 
+
+## Package Overview
 
 * multilistener -- listen on multiple local loopback interfaces with multilistener.NewLocalLoopback()
 * middleware -- block remote connections on net.Listener and http.Server. see middleware.FirewallListener and middleware.LocalOnlyMiddleware 
@@ -443,6 +509,104 @@ import "github.com/tonymet/dualstack/internal/bad-go-code"
 ```
 
 ## Index
+
+
+
+# testing
+
+```go
+import "github.com/tonymet/dualstack/middleware/testing"
+```
+
+middleware/testing package with mock interfaces for testing net.Listener
+
+## Index
+
+- [type MockConn](<#MockConn>)
+  - [func \(m \*MockConn\) Close\(\) error](<#MockConn.Close>)
+  - [func \(m \*MockConn\) RemoteAddr\(\) net.Addr](<#MockConn.RemoteAddr>)
+- [type MockListener](<#MockListener>)
+  - [func NewMockListener\(\) \*MockListener](<#NewMockListener>)
+  - [func \(m \*MockListener\) Accept\(\) \(net.Conn, error\)](<#MockListener.Accept>)
+  - [func \(m \*MockListener\) Addr\(\) net.Addr](<#MockListener.Addr>)
+  - [func \(m \*MockListener\) Close\(\) error](<#MockListener.Close>)
+
+
+<a name="MockConn"></a>
+## type MockConn
+
+MockConn is a fake net.Conn for testing purposes.
+
+```go
+type MockConn struct {
+    net.Conn
+    // contains filtered or unexported fields
+}
+```
+
+<a name="MockConn.Close"></a>
+### func \(\*MockConn\) Close
+
+```go
+func (m *MockConn) Close() error
+```
+
+
+
+<a name="MockConn.RemoteAddr"></a>
+### func \(\*MockConn\) RemoteAddr
+
+```go
+func (m *MockConn) RemoteAddr() net.Addr
+```
+
+
+
+<a name="MockListener"></a>
+## type MockListener
+
+MockListener is a fake net.Listener for testing purposes.
+
+```go
+type MockListener struct {
+    net.Listener
+    // contains filtered or unexported fields
+}
+```
+
+<a name="NewMockListener"></a>
+### func NewMockListener
+
+```go
+func NewMockListener() *MockListener
+```
+
+
+
+<a name="MockListener.Accept"></a>
+### func \(\*MockListener\) Accept
+
+```go
+func (m *MockListener) Accept() (net.Conn, error)
+```
+
+
+
+<a name="MockListener.Addr"></a>
+### func \(\*MockListener\) Addr
+
+```go
+func (m *MockListener) Addr() net.Addr
+```
+
+
+
+<a name="MockListener.Close"></a>
+### func \(\*MockListener\) Close
+
+```go
+func (m *MockListener) Close() error
+```
 
 
 
