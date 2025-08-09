@@ -1,2 +1,10 @@
 [![Go Test](https://github.com/tonymet/dualstack/actions/workflows/go.yml/badge.svg)](https://github.com/tonymet/dualstack/actions/workflows/go.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/tonymet/dualstack.svg)](https://pkg.go.dev/github.com/tonymet/dualstack)
+
+## Dualstack -- utilities to ease migration to ipv6
+
+### Overview
+
+* multilistener -- listen on multiple local loopback interfaces with multilistener.NewLocalLoopback()
+* middleware -- block remote connections on net.Listener and http.Server. see middleware.FirewallListener and middleware.LocalOnlyMiddleware 
+* linter -- identify ipv6 anti-patterns

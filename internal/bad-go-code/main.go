@@ -12,5 +12,5 @@ func main() {
 
 	// net.ParseIP handles both IPv4 and IPv6. To check that it's *not* IPv4,
 	// you can see if the To4() method returns nil.
-	fmt.Printf(ip.String())
+	fmt.Println(ip.String())
 }

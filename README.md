@@ -3,6 +3,183 @@
 [![Go Test](https://github.com/tonymet/dualstack/actions/workflows/go.yml/badge.svg)](https://github.com/tonymet/dualstack/actions/workflows/go.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/tonymet/dualstack.svg)](https://pkg.go.dev/github.com/tonymet/dualstack)
 
+## Dualstack -- utilities to ease migration to ipv6
+
+### Overview
+
+* multilistener -- listen on multiple local loopback interfaces with multilistener.NewLocalLoopback()
+* middleware -- block remote connections on net.Listener and http.Server. see middleware.FirewallListener and middleware.LocalOnlyMiddleware 
+* linter -- identify ipv6 anti-patterns
+
+# linter
+
+```go
+import "github.com/tonymet/dualstack/linter"
+```
+
+## Index
+
+- [Variables](<#variables>)
+
+
+## Variables
+
+<a name="AnalyzerIP4"></a>Analyzer is the core component of our static analysis checker. It defines the name, documentation, and the function that performs the analysis.
+
+```go
+var AnalyzerIP4 = &analysis.Analyzer{
+    Name: "ipv4checker",
+    Doc:  "Reports calls to net.Listen using a hardcoded IPv4 loopback address.",
+    Run:  runIP4,
+}
+```
+
+<a name="AnalyzerParseIP"></a>The Analyzer's name and description.
+
+```go
+var AnalyzerParseIP = &analysis.Analyzer{
+    Name: "checkip",
+    Doc:  "checks for net.ParseIP calls without a net.IP.To4() check",
+    Run:  runParseIP,
+    Requires: []*analysis.Analyzer{
+        inspect.Analyzer,
+    },
+}
+```
+
+<a name="Analyzers"></a>
+
+```go
+var Analyzers []*analysis.Analyzer = make([]*analysis.Analyzer, 0)
+```
+
+# middleware
+
+```go
+import "github.com/tonymet/dualstack/middleware"
+```
+
+## Index
+
+- [Variables](<#variables>)
+- [func LocalOnlyMiddleware\(next http.Handler\) http.Handler](<#LocalOnlyMiddleware>)
+- [type FirewallListener](<#FirewallListener>)
+  - [func NewFirewallListener\(l net.Listener\) \*FirewallListener](<#NewFirewallListener>)
+  - [func \(fl \*FirewallListener\) Accept\(\) \(net.Conn, error\)](<#FirewallListener.Accept>)
+
+
+## Variables
+
+<a name="ErrFirewall"></a>
+
+```go
+var ErrFirewall = errors.New("blocked remote addr")
+```
+
+<a name="ErrIPError"></a>
+
+```go
+var ErrIPError = errors.New("error reading remote IP")
+```
+
+<a name="LocalOnlyMiddleware"></a>
+## func LocalOnlyMiddleware
+
+```go
+func LocalOnlyMiddleware(next http.Handler) http.Handler
+```
+
+LocalOnlyMiddleware checks if a request is coming from a local interface by accessing the actual connection's remote address. This version uses a type assertion to get the binary IP address directly, avoiding string parsing.
+
+<details><summary>Example</summary>
+<p>
+
+ExampleLocalOnlyMiddleware example of wrapping a common handler
+
+```go
+nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Allowed")) // nolint:errcheck
+})
+protectedHandler := LocalOnlyMiddleware(nextHandler)
+// for common apps use http.Handle("/", protectedHandler)
+ts := httptest.NewServer(protectedHandler)
+defer ts.Close()
+
+// Create a request with a local remote address
+reqLocal := httptest.NewRequest("GET", ts.URL, nil)
+reqLocal.RemoteAddr = "127.0.0.1:12345" // Simulate a local client
+
+// Create a response recorder
+rrLocal := httptest.NewRecorder()
+
+// Serve the request through the middleware
+protectedHandler.ServeHTTP(rrLocal, reqLocal)
+
+fmt.Printf("Local Request Status: %d\n", rrLocal.Result().StatusCode)
+fmt.Printf("Local Request Body: %s\n", rrLocal.Body.String())
+
+// --- Test Case 2: Request from a non-local IP (should be forbidden) ---
+// Create a request with a non-local remote address
+reqRemote := httptest.NewRequest("GET", ts.URL, nil)
+reqRemote.RemoteAddr = "192.168.1.100:54321" // Simulate a remote client
+
+// Create a response recorder
+rrRemote := httptest.NewRecorder()
+
+// Serve the request through the middleware
+protectedHandler.ServeHTTP(rrRemote, reqRemote)
+
+fmt.Printf("Remote Request Status: %d\n", rrRemote.Result().StatusCode)
+fmt.Printf("Remote Request Body: %s\n", rrRemote.Body.String())
+// Output:
+// Local Request Status: 200
+// Local Request Body: Allowed
+// Remote Request Status: 403
+// Remote Request Body: Forbidden
+```
+
+#### Output
+
+```
+Local Request Status: 200
+Local Request Body: Allowed
+Remote Request Status: 403
+Remote Request Body: Forbidden
+```
+
+</p>
+</details>
+
+<a name="FirewallListener"></a>
+## type FirewallListener
+
+FirewallListener wraps a net.Listener to block non\-localhost connections.
+
+```go
+type FirewallListener struct {
+    net.Listener
+}
+```
+
+<a name="NewFirewallListener"></a>
+### func NewFirewallListener
+
+```go
+func NewFirewallListener(l net.Listener) *FirewallListener
+```
+
+NewFirewallListener creates and returns a new FirewallListener that wraps an existing listener.
+
+<a name="FirewallListener.Accept"></a>
+### func \(\*FirewallListener\) Accept
+
+```go
+func (fl *FirewallListener) Accept() (net.Conn, error)
+```
+
+Accept is the middleware for our firewall. It wraps the underlying Accept call, inspects the connection's IP address, and blocks it if it's not a localhost address.
+
 # multilistener
 
 ```go
@@ -27,7 +204,7 @@ use multilistener.ListenLocalLoopback to return a single Listener for all ipv4 &
   - [func \(dl \*MultiListener\) Accept\(\) \(net.Conn, error\)](<#MultiListener.Accept>)
   - [func \(dl \*MultiListener\) Addr\(\) net.Addr](<#MultiListener.Addr>)
   - [func \(dl \*MultiListener\) AllAddr\(\) net.Addr](<#MultiListener.AllAddr>)
-  - [func \(dl \*MultiListener\) Close\(\) error](<#MultiListener.Close>)
+  - [func \(dl \*MultiListener\) Close\(\) \(err error\)](<#MultiListener.Close>)
   - [func \(dl \*MultiListener\) Network\(\) string](<#MultiListener.Network>)
   - [func \(dl \*MultiListener\) String\(\) string](<#MultiListener.String>)
 
@@ -71,23 +248,27 @@ ipv6 is the preferred address when Addr\(\) is called
 NewLocalLoopback when you want to listen to ipv6 & ipv4 loopback with one listener
 
 ```go
-dual, err := NewLocalLoopback("8080")
+http.HandleFunc("/bar", func(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, "Hello World!\n")
+})
+
+dual, err := NewLocalLoopback("8129")
 if err != nil {
 	panic(err)
 }
 fmt.Printf("Serving HTTP %+v\n", dual.AllAddr())
 fmt.Printf("Preferred Addr: %+v\n", dual.Addr())
-go http.Serve(dual, nil)
+go http.Serve(dual, nil) //nolint:errcheck
 // Output:
-// Serving HTTP [::1]:8080,127.0.0.1:8080
-// Preferred Addr: [::1]:8080
+// Serving HTTP [::1]:8129,127.0.0.1:8129
+// Preferred Addr: [::1]:8129
 ```
 
 #### Output
 
 ```
-Serving HTTP [::1]:8080,127.0.0.1:8080
-Preferred Addr: [::1]:8080
+Serving HTTP [::1]:8129,127.0.0.1:8129
+Preferred Addr: [::1]:8129
 ```
 
 </p>
@@ -148,7 +329,7 @@ NOTE: NOT A VALID IP ADDRESS . Use Addr\(\) for a valid address
 ### func \(\*MultiListener\) Close
 
 ```go
-func (dl *MultiListener) Close() error
+func (dl *MultiListener) Close() (err error)
 ```
 
 Close closes all internal channels
@@ -162,7 +343,7 @@ do not defer Close\(\) if passing to http.Server
 func (dl *MultiListener) Network() string
 ```
 
-net.Addr.Network\(\) implementation
+Network\(\) implementation for net.Addr
 
 <a name="MultiListener.String"></a>
 ### func \(\*MultiListener\) String
@@ -170,6 +351,98 @@ net.Addr.Network\(\) implementation
 ```go
 func (dl *MultiListener) String() string
 ```
+
+String\(\) joins all addresses, comma separated, for logs & debug
+
+# http\-server\-ipv6
+
+```go
+import "github.com/tonymet/dualstack/cmd/http-server-ipv6"
+```
+
+## Index
+
+- [func ListenAll\(\)](<#ListenAll>)
+- [func ListenAndBindLocal\(\)](<#ListenAndBindLocal>)
+- [func ListenWithMultiListener\(\)](<#ListenWithMultiListener>)
+- [type DSListener](<#DSListener>)
+  - [func ListenLocal\(\) \(dsl DSListener, err error\)](<#ListenLocal>)
+
+
+<a name="ListenAll"></a>
+## func ListenAll
+
+```go
+func ListenAll()
+```
+
+
+
+<a name="ListenAndBindLocal"></a>
+## func ListenAndBindLocal
+
+```go
+func ListenAndBindLocal()
+```
+
+
+
+<a name="ListenWithMultiListener"></a>
+## func ListenWithMultiListener
+
+```go
+func ListenWithMultiListener()
+```
+
+
+
+<a name="DSListener"></a>
+## type DSListener
+
+
+
+```go
+type DSListener struct {
+    // contains filtered or unexported fields
+}
+```
+
+<a name="ListenLocal"></a>
+### func ListenLocal
+
+```go
+func ListenLocal() (dsl DSListener, err error)
+```
+
+
+
+# linter
+
+```go
+import "github.com/tonymet/dualstack/cmd/linter"
+```
+
+## Index
+
+
+
+# simple\-listener
+
+```go
+import "github.com/tonymet/dualstack/cmd/simple-listener"
+```
+
+## Index
+
+
+
+# bad\-go\-code
+
+```go
+import "github.com/tonymet/dualstack/internal/bad-go-code"
+```
+
+## Index
 
 
 
