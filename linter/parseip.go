@@ -60,9 +60,7 @@ func runParseIP(pass *analysis.Pass) (interface{}, error) {
 						if obj := pass.TypesInfo.ObjectOf(ident); obj != nil {
 							// If a check is found, remove the variable from our map.
 							// This marks it as "handled."
-							if _, ok := parsedIPs[obj]; ok {
-								delete(parsedIPs, obj)
-							}
+							delete(parsedIPs, obj)
 						}
 					}
 				}

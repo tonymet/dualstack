@@ -63,6 +63,15 @@ func ExampleLocalOnlyMiddleware() {
 
 ```
 
+## Linter -- Install & Run
+
+```
+go install github.com/tonymet/dualstack/cmd/linter
+linter ./internal/bad-go-code
+bad-go-code/main.go:11:2: call to `net.ParseIP` should be followed by a check for IPv4 or handle IPv6 compatibility
+```
+
+
 ## Why Now?
 
 Developers are familiar with ipv4 as a stable and secure approach. Local oauth

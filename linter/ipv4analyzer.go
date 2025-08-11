@@ -14,6 +14,7 @@ var Analyzers []*analysis.Analyzer = make([]*analysis.Analyzer, 0)
 func init() {
 	Analyzers = append(Analyzers, AnalyzerIP4)
 	Analyzers = append(Analyzers, AnalyzerParseIP)
+	Analyzers = append(Analyzers, AnalyzerIP4Byte)
 }
 
 // Analyzer is the core component of our static analysis checker.

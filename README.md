@@ -65,6 +65,15 @@ func ExampleLocalOnlyMiddleware() {
 
 ```
 
+## Linter -- Install & Run
+
+```
+go install github.com/tonymet/dualstack/cmd/linter
+linter ./internal/bad-go-code
+bad-go-code/main.go:11:2: call to `net.ParseIP` should be followed by a check for IPv4 or handle IPv6 compatibility
+```
+
+
 ## Why Now?
 
 Developers are familiar with ipv4 as a stable and secure approach. Local oauth
@@ -97,6 +106,17 @@ var AnalyzerIP4 = &analysis.Analyzer{
     Name: "ipv4checker",
     Doc:  "Reports calls to net.Listen using a hardcoded IPv4 loopback address.",
     Run:  runIP4,
+}
+```
+
+<a name="AnalyzerIP4Byte"></a>Analyzer is the entry point for our linter.
+
+```go
+var AnalyzerIP4Byte = &analysis.Analyzer{
+    Name:     "ipv4linter",
+    Doc:      "Checks for incorrect IPv4 size assumptions on net.IP variables.",
+    Requires: []*analysis.Analyzer{inspect.Analyzer},
+    Run:      runIP4Byte,
 }
 ```
 
@@ -607,6 +627,26 @@ func (m *MockListener) Addr() net.Addr
 ```go
 func (m *MockListener) Close() error
 ```
+
+
+
+# a
+
+```go
+import "github.com/tonymet/dualstack/linter/testdata/ip4byte"
+```
+
+## Index
+
+
+
+# parseip\_test
+
+```go
+import "github.com/tonymet/dualstack/linter/testdata/parseip"
+```
+
+## Index
 
 
 
