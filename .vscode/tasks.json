@@ -15,6 +15,13 @@
             "problemMatcher": []
         },
         {
+            "label": "docker build",
+            "type": "shell",
+            "command": "docker build . -t linter:2",
+            "options": {"cwd": "${workspaceFolder}"},
+            "problemMatcher": []
+        },
+        {
             "label": "README",
             "type": "shell",
             "command": " gomarkdoc --output README.md  ./multilistener    ",

@@ -3,3 +3,6 @@ README.md:multilistener/* linter/* middleware/* header.in
 
 lint:
 	golangci-lint run
+
+test:
+	go test ./...

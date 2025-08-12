@@ -5,8 +5,8 @@
 
 ## Dualstack -- utilities to ease migration to ipv6
 We recognize there are still barriers to ipv6 adoption.  This project aims to identify anti-patterns blocking ipv6 / dual stack
-compatibility like `net.Listen("tcp", "127.0.0.1")` .   First , ipv6
-linter/analyzer identifies faulty code.  dualstack offers a few ipv6-compatible
+compatibility like `net.Listen("tcp", "127.0.0.1")` .   First , ip6check is a linter/checker
+/analyzer that identifies faulty code.  dualstack offers a few ipv6-compatible
 approaches to secure those interfaces: multilistener to listen to multiple interfaces with a single Accept(), middleware
 to block remote http traffic, and firewall to block remote tcp connections.  
 
@@ -65,12 +65,21 @@ func ExampleLocalOnlyMiddleware() {
 
 ```
 
-## Linter -- Install & Run
+## ip6check -- Install & Run
+
 
 ```
-go install github.com/tonymet/dualstack/cmd/linter
-linter ./internal/bad-go-code
+go install github.com/tonymet/dualstack/cmd/ip6check
+ip6check ./internal/bad-go-code
 bad-go-code/main.go:11:2: call to `net.ParseIP` should be followed by a check for IPv4 or handle IPv6 compatibility
+```
+
+### ip6check Docker Image
+
+You can pull and run the Docker image for your CI workflow 
+
+```
+docker run -v$(pwd):/workspace us-west1-docker.pkg.dev/tonym-us/dualstack/ip6check /workspace/main.go
 ```
 
 
@@ -502,10 +511,10 @@ func ListenLocal() (dsl DSListener, err error)
 
 
 
-# linter
+# ip6check
 
 ```go
-import "github.com/tonymet/dualstack/cmd/linter"
+import "github.com/tonymet/dualstack/cmd/ip6check"
 ```
 
 ## Index
@@ -640,13 +649,23 @@ import "github.com/tonymet/dualstack/linter/testdata/ip4byte"
 
 
 
-# parseip\_test
+# parseip
 
 ```go
 import "github.com/tonymet/dualstack/linter/testdata/parseip"
 ```
 
 ## Index
+
+- [func GoodIpv4\(\)](<#GoodIpv4>)
+
+
+<a name="GoodIpv4"></a>
+## func GoodIpv4
+
+```go
+func GoodIpv4()
+```
 
 
 
